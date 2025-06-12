@@ -7,9 +7,12 @@ import os
 import json
 from pathlib import Path
 from typing import Dict, Any
+from dotenv import load_dotenv
 
 from orchestrator import MCPOrchestrator
 
+# Cargamos las variables de entorno al inicio
+load_dotenv()
 
 class MCPApp:
     """Aplicación principal del sistema MCP"""
