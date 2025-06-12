@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "brave-search": {
+      "command": "npx",
+      "description": "Provides advanced web search capabilities using the Brave Search engine, enabling users to retrieve up-to-date information, perform complex queries, access diverse sources, and obtain relevant results from the open web for research, fact-checking, and knowledge discovery.",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "BSAM5zIF4xqucvbiCtPLMqpzFyP2jkp"
+      }
+    }
+  }
+}
