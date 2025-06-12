@@ -3,8 +3,7 @@
         "."
     ],
     "graphs": {
-        "executor_agent": "./executor_agent.py:workflow",
-        "consultant_agent": "./consultant_agent.py:workflow"
+        "agents_1": "./executor_agent.py:workflow"
     },
     "env": ".env"
 }

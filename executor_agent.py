@@ -10,19 +10,10 @@ from langgraph.graph import StateGraph, MessagesState
 from langgraph.prebuilt import ToolNode
 from langgraph.checkpoint.memory import MemorySaver
 from dataclasses import dataclass
-import os
+import json
+import asyncio
 
 
-def workflow():
-    agent = ExecutorAgent(
-        openai_api_key=os.getenv("OPENAI_API_KEY"),  # Fix: Call os.getenv as a function
-        mcp_tools=[]
-    )
-    return agent.create_agent_graph()
-
-if __name__ == "__main__":
-    graph = workflow()
-    print(graph.get_graph().draw_mermaid())
 @dataclass
 class ExecutionResult:
     """Resultado de la ejecución de una tarea"""
