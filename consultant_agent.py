@@ -9,19 +9,7 @@ from langgraph.graph import StateGraph, MessagesState
 from langgraph.checkpoint.memory import MemorySaver
 from dataclasses import dataclass
 import json
-import os
 
-
-def workflow():
-    agent = ConsultantAgent(
-        openai_api_key=os.getenv("OPENAI_API_KEY"),  # Fix: Call os.getenv as a function
-        available_tools_info={}
-    )
-    return agent.create_agent_graph()
-
-if __name__ == "__main__":
-    graph = workflow()
-    print(graph.get_graph().draw_mermaid())
 
 @dataclass
 class TaskPlan:
