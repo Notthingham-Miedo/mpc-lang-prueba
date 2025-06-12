@@ -17,7 +17,15 @@
       "args": [
         "-y",
         "@modelcontextprotocol/server-filesystem",
-        "C:/Users/facus/OneDrive/Escritorio"
+        "C:/Users/Administrador/Desktop"
+      ]
+    },
+    "postgres": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-postgres",
+        "postgresql://postgres:postgres@localhost:5432/gearcode"
       ]
     }
   }
