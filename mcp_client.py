@@ -71,13 +71,29 @@ class MCPTool(BaseTool):
         super().__init__(
             name=name,
             description=description,
-            args_schema=args_schema,
-            tool_info=tool_info
+            args_schema=args_schema
+            # tool_info=tool_info
         )
-        self.tool_info = tool_info
-        self.session = session
-        self.server_name = server_name
+        # Guardamos el resto de atributos después de la inicialización de la clase base
+        self._tool_info = tool_info
+        self._session = session
+        self._server_name = server_name
 
+    @property
+    def tool_info(self):
+        """Propiedad para acceder a la información de la herramienta."""
+        return self._tool_info
+        
+    @property
+    def session(self):
+        """Propiedad para acceder a la sesión de MCP."""
+        return self._session
+        
+    @property
+    def server_name(self):
+        """Propiedad para acceder al nombre del servidor."""
+        return self._server_name
+    
     async def _arun(self, **kwargs: Any) -> Any:
         """Método asíncrono para ejecutar la herramienta."""
         try:

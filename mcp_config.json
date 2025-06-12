@@ -10,6 +10,15 @@
       "env": {
         "BRAVE_API_KEY": "BSAM5zIF4xqucvbiCtPLMqpzFyP2jkp"
       }
+    },
+    "filesystem": {
+      "command": "npx",
+      "description": "Filesystem operations on your files, e.g., search, copy, move, and delete files.",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "C:/Users/Compu/Desktop"
+      ]
     }
   }
 }
