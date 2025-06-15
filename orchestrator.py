@@ -1,6 +1,22 @@
 """
 Orquestador Principal - Coordina la interacción entre el Agente Consultor y el Agente Ejecutor.
-Este módulo maneja el flujo completo de trabajo entre ambos agentes.
+
+Este módulo implementa el patrón de diseño Orquestador, que coordina el flujo de trabajo
+entre diferentes agentes especializados. El orquestador maneja:
+
+1. Inicialización y configuración de agentes
+2. Gestión de sesiones de conversación
+3. Coordinación del flujo de trabajo:
+   - Análisis de solicitudes del usuario
+   - Planificación de tareas
+   - Ejecución de acciones
+   - Generación de respuestas
+
+Flujo de trabajo:
+1. El usuario envía una solicitud
+2. El Agente Consultor analiza la solicitud y crea un plan
+3. El Agente Ejecutor implementa el plan usando herramientas MCP
+4. El Orquestador combina los resultados y genera una respuesta
 """
 import asyncio
 from typing import Dict, List, Any, Optional, AsyncGenerator
@@ -14,7 +30,16 @@ from executor_agent import ExecutorAgent, ExecutionResult
 
 @dataclass
 class ConversationContext:
-    """Contexto de una conversación"""
+    """
+    Almacena el contexto de una conversación activa.
+    
+    Atributos:
+        session_id: Identificador único de la sesión
+        consultant_thread_id: ID del hilo de conversación con el Agente Consultor
+        executor_thread_id: ID del hilo de conversación con el Agente Ejecutor
+        current_plan: Plan de ejecución actual (si existe)
+        execution_history: Historial de ejecuciones en esta sesión
+    """
     session_id: str
     consultant_thread_id: str
     executor_thread_id: str
@@ -22,6 +47,7 @@ class ConversationContext:
     execution_history: List[Dict[str, Any]] = None
     
     def __post_init__(self):
+        """Inicializa el historial de ejecución si no existe"""
         if self.execution_history is None:
             self.execution_history = []
 
@@ -29,17 +55,36 @@ class ConversationContext:
 class MCPOrchestrator:
     """
     Orquestador que coordina el trabajo entre el Agente Consultor y el Agente Ejecutor.
-    Maneja el flujo completo de consulta -> planificación -> ejecución -> respuesta.
+    
+    Responsabilidades:
+    1. Inicialización y configuración de agentes
+    2. Gestión de sesiones de conversación
+    3. Coordinación del flujo de trabajo
+    4. Manejo de errores y excepciones
+    
+    Flujo de trabajo:
+    1. Recibe solicitud del usuario
+    2. Coordina con el Agente Consultor para análisis
+    3. Extrae plan de ejecución si es necesario
+    4. Coordina con el Agente Ejecutor para implementación
+    5. Combina resultados y genera respuesta
     """
     
     def __init__(self, openai_api_key: str, model: str = "gpt-4o-mini"):
+        """
+        Inicializa el orquestador con la configuración básica.
+        
+        Args:
+            openai_api_key: Clave API de OpenAI
+            model: Modelo de lenguaje a utilizar
+        """
         self.openai_api_key = openai_api_key
         self.model = model
         
         # Clientes y agentes
-        self.mcp_client: Optional[MCPClient] = None
-        self.consultant_agent: Optional[ConsultantAgent] = None
-        self.executor_agent: Optional[ExecutorAgent] = None
+        self.mcp_client: Optional[MCPClient] = None  # Cliente para comunicación con MCP
+        self.consultant_agent: Optional[ConsultantAgent] = None  # Agente para análisis y planificación
+        self.executor_agent: Optional[ExecutorAgent] = None  # Agente para ejecución de tareas
         
         # Contextos de conversación activos
         self.conversations: Dict[str, ConversationContext] = {}
@@ -48,7 +93,18 @@ class MCPOrchestrator:
         self.is_initialized = False
     
     async def initialize(self, mcp_servers_config: Dict[str, Dict[str, Any]]):
-        """Inicializar el orquestador con la configuración de servidores MCP"""
+        """
+        Inicializa el orquestador con la configuración de servidores MCP.
+        
+        Pasos:
+        1. Inicializa el cliente MCP
+        2. Conecta con los servidores MCP configurados
+        3. Obtiene información de herramientas disponibles
+        4. Inicializa los agentes con la configuración necesaria
+        
+        Args:
+            mcp_servers_config: Configuración de servidores MCP
+        """
         try:
             # Inicializar cliente MCP
             self.mcp_client = MCPClient()
@@ -83,7 +139,12 @@ class MCPOrchestrator:
             raise
     
     def create_conversation(self) -> str:
-        """Crear una nueva conversación y devolver su ID"""
+        """
+        Crea una nueva sesión de conversación.
+        
+        Returns:
+            str: ID único de la nueva sesión
+        """
         session_id = str(uuid.uuid4())
         
         context = ConversationContext(
@@ -102,11 +163,21 @@ class MCPOrchestrator:
         auto_execute: bool = True
     ) -> str:
         """
-        Procesar una solicitud del usuario a través del flujo completo:
+        Procesa una solicitud del usuario a través del flujo completo.
+        
+        Flujo:
         1. Análisis con el Agente Consultor
-        2. Extracción del plan de ejecución (si existe)
+        2. Extracción del plan de ejecución
         3. Ejecución con el Agente Ejecutor (si auto_execute=True)
-        4. Respuesta final al usuario
+        4. Generación de respuesta final
+        
+        Args:
+            user_input: Solicitud del usuario
+            session_id: ID de la sesión (opcional)
+            auto_execute: Si se debe ejecutar el plan automáticamente
+            
+        Returns:
+            str: Respuesta procesada
         """
         if not self.is_initialized:
             return "❌ El orquestador no está inicializado. Llama a initialize() primero."
@@ -192,7 +263,15 @@ Usa `execute_current_plan()` para ejecutarlo o `process_user_request()` con `aut
             return error_msg
     
     async def execute_current_plan(self, session_id: str) -> str:
-        """Ejecutar el plan actual de una sesión"""
+        """
+        Ejecuta el plan actual de una sesión.
+        
+        Args:
+            session_id: ID de la sesión
+            
+        Returns:
+            str: Resultado de la ejecución
+        """
         context = self.conversations.get(session_id)
         if not context or not context.current_plan:
             return "❌ No hay plan de ejecución disponible en esta sesión."
@@ -227,7 +306,19 @@ Resultado esperado: {plan.expected_outcome}
         user_input: str, 
         session_id: Optional[str] = None
     ) -> AsyncGenerator[str, None]:
-        """Procesar solicitud con streaming de resultados"""
+        """
+        Procesa una solicitud con streaming de resultados.
+        
+        Similar a process_user_request pero devuelve los resultados
+        en tiempo real a medida que se generan.
+        
+        Args:
+            user_input: Solicitud del usuario
+            session_id: ID de la sesión (opcional)
+            
+        Yields:
+            str: Fragmentos de la respuesta en tiempo real
+        """
         if not self.is_initialized:
             yield "❌ El orquestador no está inicializado."
             return

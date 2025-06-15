@@ -1,6 +1,18 @@
 """
 Aplicación principal para el sistema de agentes MCP.
-Proporciona una interfaz simple para interactuar con el orquestador.
+Este archivo implementa la interfaz de usuario y la lógica principal del sistema.
+
+El sistema utiliza un patrón de diseño basado en agentes donde:
+1. El usuario interactúa a través de una interfaz de línea de comandos
+2. Las solicitudes se procesan a través de un orquestador
+3. El orquestador coordina diferentes agentes especializados
+4. Los agentes utilizan herramientas MCP para realizar tareas específicas
+
+Flujo principal:
+1. Inicialización -> Carga de configuración y variables de entorno
+2. Bucle de chat -> Procesamiento de solicitudes del usuario
+3. Orquestación -> Coordinación de agentes y herramientas
+4. Respuesta -> Entrega de resultados al usuario
 """
 import asyncio
 import os
@@ -15,14 +27,34 @@ from orchestrator import MCPOrchestrator
 load_dotenv()
 
 class MCPApp:
-    """Aplicación principal del sistema MCP"""
+    """
+    Clase principal que maneja la aplicación MCP.
+    
+    Responsabilidades:
+    - Inicialización del sistema
+    - Gestión de sesiones de conversación
+    - Procesamiento de comandos del usuario
+    - Interfaz de usuario en línea de comandos
+    """
     
     def __init__(self):
-        self.orchestrator: MCPOrchestrator = None
-        self.current_session: str = None
+        """Inicializa la aplicación con valores por defecto"""
+        self.orchestrator: MCPOrchestrator = None  # Orquestador principal
+        self.current_session: str = None  # ID de la sesión actual
     
     async def initialize(self, config_path: str = "mcp_config.json"):
-        """Inicializar la aplicación"""
+        """
+        Inicializa la aplicación con la configuración especificada.
+        
+        Pasos:
+        1. Carga la configuración desde el archivo JSON
+        2. Verifica las variables de entorno necesarias
+        3. Inicializa el orquestador con la API key de OpenAI
+        4. Crea una sesión inicial de conversación
+        
+        Args:
+            config_path: Ruta al archivo de configuración
+        """
         try:
             # Cargar configuración
             config = self.load_config(config_path)
@@ -35,7 +67,7 @@ class MCPApp:
             if not openai_api_key:
                 raise ValueError("OPENAI_API_KEY no está configurada en las variables de entorno")
             
-            # Inicializar orquestador
+            # Inicializar orquestador con la configuración
             self.orchestrator = MCPOrchestrator(
                 openai_api_key=openai_api_key,
                 model=os.getenv("OPENAI_MODEL", "gpt-4o-mini")
@@ -55,7 +87,17 @@ class MCPApp:
             raise
     
     def load_config(self, config_path: str) -> Dict[str, Any]:
-        """Cargar configuración desde archivo JSON"""
+        """
+        Carga la configuración desde un archivo JSON.
+        
+        Si el archivo no existe, crea una configuración de ejemplo.
+        
+        Args:
+            config_path: Ruta al archivo de configuración
+            
+        Returns:
+            Dict con la configuración cargada
+        """
         config_file = Path(config_path)
         
         if not config_file.exists():
@@ -88,7 +130,15 @@ class MCPApp:
             return json.load(f)
     
     def check_environment_variables(self, config: Dict[str, Any]):
-        """Verificar que las variables de entorno necesarias estén configuradas"""
+        """
+        Verifica que todas las variables de entorno necesarias estén configuradas.
+        
+        Analiza la configuración para encontrar referencias a variables de entorno
+        y verifica que existan en el sistema.
+        
+        Args:
+            config: Diccionario con la configuración
+        """
         required_vars = set()
         
         # Extraer variables de entorno de la configuración
@@ -124,7 +174,15 @@ class MCPApp:
                     print(f"   export {var}='valor-correspondiente'")
     
     async def chat_loop(self):
-        """Bucle principal de chat interactivo"""
+        """
+        Bucle principal de chat interactivo.
+        
+        Maneja la interacción con el usuario:
+        1. Lee comandos del usuario
+        2. Procesa comandos especiales (help, quit, etc.)
+        3. Envía solicitudes al orquestador
+        4. Muestra respuestas
+        """
         if not self.orchestrator:
             print("❌ Aplicación no inicializada")
             return
@@ -164,7 +222,7 @@ class MCPApp:
                 
                 print("\n🤖 Procesando...")
                 
-                # Procesar solicitud
+                # Procesar solicitud a través del orquestador
                 response = await self.orchestrator.process_user_request(
                     user_input,
                     self.current_session
@@ -179,7 +237,12 @@ class MCPApp:
                 print(f"\n❌ Error: {str(e)}")
     
     async def stream_chat_loop(self):
-        """Bucle de chat con streaming de respuestas"""
+        """
+        Bucle de chat con streaming de respuestas.
+        
+        Similar a chat_loop pero muestra las respuestas en tiempo real
+        a medida que se generan.
+        """
         if not self.orchestrator:
             print("❌ Aplicación no inicializada")
             return
@@ -218,7 +281,7 @@ class MCPApp:
                 print(f"\n❌ Error: {str(e)}")
     
     def show_help(self):
-        """Mostrar ayuda de comandos"""
+        """Muestra la ayuda con los comandos disponibles"""
         help_text = """
 🆘 **Comandos disponibles:**
 
@@ -243,7 +306,7 @@ class MCPApp:
         print(help_text)
     
     def show_available_tools(self):
-        """Mostrar herramientas disponibles"""
+        """Muestra información sobre las herramientas MCP disponibles"""
         tools_info = self.orchestrator.get_available_tools_info()
         
         print("\n🛠️  **Herramientas MCP disponibles:**")
